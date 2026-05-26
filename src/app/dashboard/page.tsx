@@ -15,8 +15,22 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(false);
   const [recentRooms, setRecentRooms] = useState<any[]>([]);
   const [friendRooms, setFriendRooms] = useState<any[]>([]);
+  const [username, setUsername] = useState("");
   const router = useRouter();
   const { user } = useAuth();
+
+  useEffect(() => {
+    if (user) {
+      supabase
+        .from("profiles")
+        .select("username")
+        .eq("id", user.id)
+        .single()
+        .then(({ data }) => {
+          if (data) setUsername(data.username);
+        });
+    }
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -110,7 +124,7 @@ export default function DashboardPage() {
           <Video size={32} />
         </div>
         
-        <h1 className={styles.title}>Create a Watch Room</h1>
+        <h1 className={styles.title}>Welcome back{username ? `, ${username}` : ""}!</h1>
         <p className={styles.description}>
           Start a new synchronized viewing session. You can paste any YouTube URL to watch together with your friends.
         </p>

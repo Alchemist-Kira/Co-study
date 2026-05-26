@@ -11,6 +11,24 @@ export default function FriendsSidebar() {
   const [searchQuery, setSearchQuery] = useState("");
   const [friends, setFriends] = useState<any[]>([]);
   const [incomingRequests, setIncomingRequests] = useState<any[]>([]);
+  const [currentUsername, setCurrentUsername] = useState("Loading...");
+
+  useEffect(() => {
+    if (user) {
+      supabase
+        .from("profiles")
+        .select("username")
+        .eq("id", user.id)
+        .single()
+        .then(({ data }) => {
+          if (data?.username) {
+            setCurrentUsername(data.username);
+          } else {
+            setCurrentUsername(user.email || "User");
+          }
+        });
+    }
+  }, [user]);
 
   const fetchFriends = async () => {
     if (!user) return;
@@ -107,9 +125,6 @@ export default function FriendsSidebar() {
     <aside className={styles.sidebar}>
       <div className={styles.sidebarHeader}>
         <span className={styles.sidebarTitle}>Friends</span>
-        <button onClick={signOut} className={styles.logoutBtn} title="Sign Out">
-          <LogOut size={20} />
-        </button>
       </div>
 
       <form onSubmit={handleAddFriend} className={styles.addFriendSection}>
@@ -175,6 +190,24 @@ export default function FriendsSidebar() {
             </div>
           ))
         )}
+      </div>
+
+      {/* Logged in User Profile Info Card */}
+      <div className={styles.currentUserSection}>
+        <div className={styles.currentUserInfo}>
+          <div className={styles.avatar} style={{ width: 36, height: 36, fontSize: '0.85rem' }}>
+            {currentUsername.substring(0, 2).toUpperCase()}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <span className={styles.currentUserLabel}>You</span>
+            <span className={styles.currentUserName} title={currentUsername}>
+              {currentUsername}
+            </span>
+          </div>
+        </div>
+        <button onClick={signOut} className={styles.logoutBtn} title="Sign Out" style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+          <LogOut size={18} />
+        </button>
       </div>
     </aside>
   );
