@@ -44,9 +44,29 @@ const setupAudioAnalyzer = (stream: MediaStream, callback: (speaking: boolean) =
   }
 };
 
-export default function VoiceChat({ roomId, userId }: { roomId: string; userId: string | undefined }) {
-  const [isMuted, setIsMuted] = useState(true);
-  const [isPushToTalk, setIsPushToTalk] = useState(true);
+export default function VoiceChat({
+  roomId,
+  userId,
+  externalMuted,
+  onMuteChange,
+}: {
+  roomId: string;
+  userId: string | undefined;
+  externalMuted?: boolean;
+  onMuteChange?: (muted: boolean) => void;
+}) {
+  const [isMuted, setIsMuted] = useState(false);
+
+  // Sync state with external mute controls (e.g. Theater mode controls)
+  useEffect(() => {
+    if (externalMuted !== undefined && externalMuted !== isMuted) {
+      setIsMuted(externalMuted);
+      if (localStreamRef.current) {
+        localStreamRef.current.getAudioTracks().forEach((t) => (t.enabled = !externalMuted));
+      }
+    }
+  }, [externalMuted]);
+  const [isPushToTalk, setIsPushToTalk] = useState(false);
   const [pttKey, setPttKey] = useState("v");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [peers, setPeers] = useState<string[]>([]);
@@ -70,6 +90,7 @@ export default function VoiceChat({ roomId, userId }: { roomId: string; userId: 
       if (e.key.toLowerCase() === pttKey.toLowerCase() && isMuted) {
         setIsMuted(false);
         localStreamRef.current!.getAudioTracks().forEach(t => t.enabled = true);
+        if (onMuteChange) onMuteChange(false);
       }
     };
 
@@ -80,6 +101,7 @@ export default function VoiceChat({ roomId, userId }: { roomId: string; userId: 
       if (e.key.toLowerCase() === pttKey.toLowerCase() && !isMuted) {
         setIsMuted(true);
         localStreamRef.current!.getAudioTracks().forEach(t => t.enabled = false);
+        if (onMuteChange) onMuteChange(true);
       }
     };
 
@@ -99,10 +121,12 @@ export default function VoiceChat({ roomId, userId }: { roomId: string; userId: 
         // Enforce mute by default when switching to PTT
         setIsMuted(true);
         localStreamRef.current.getAudioTracks().forEach(t => t.enabled = false);
+        if (onMuteChange) onMuteChange(true);
       } else {
         // Unmute when switching to Auto-Talk
         setIsMuted(false);
         localStreamRef.current.getAudioTracks().forEach(t => t.enabled = true);
+        if (onMuteChange) onMuteChange(false);
       }
     }
   }, [isPushToTalk]);
@@ -314,6 +338,7 @@ export default function VoiceChat({ roomId, userId }: { roomId: string; userId: 
                 if (localStreamRef.current) {
                   localStreamRef.current.getAudioTracks().forEach(t => t.enabled = !newMutedState);
                 }
+                if (onMuteChange) onMuteChange(newMutedState);
               }
             }}
           >
